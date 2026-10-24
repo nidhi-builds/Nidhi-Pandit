@@ -1,7 +1,7 @@
 """Candidates preserve row identities; final policy is in decisions.py."""
 import numpy as np
 import pandas as pd
-from .config import CHANNELS
+from .config import CHANNELS, FLOORS
 from .types import Candidate
 
 
@@ -44,7 +44,8 @@ def check_basic(pack):
                         result.append(Candidate(station, 'all', 'missing_data', 'records', previous + cadence, current - cadence, (),
                             {'supported': True, 'missing_records': missing, 'cadence_minutes': cadence.total_seconds() / 60,
                              'time_basis': 'analysis grid', 'reason': f'{missing} expected records absent between observations'}))
-        for timestamp, part in frame.loc[frame._logger_time.notna()].groupby('_logger_time', sort=True):
+        duplicate_mask = frame._logger_time.notna() & frame._logger_time.duplicated(keep=False)
+        for timestamp, part in frame.loc[duplicate_mask].groupby('_logger_time', sort=True):
             if len(part) < 2:
                 continue
             identical = part[list(CHANNELS)].nunique(dropna=False).le(1).all()
@@ -66,4 +67,55 @@ def check_basic(pack):
         for channel in CHANNELS:
             result += intervals(pack, station, channel, 'missing_data', 'values', frame[channel].isna(),
                                 {'supported': True, 'reason': 'Missing or nonfinite channel value'})
+        domains = {'rh_pct': (0, 100), 'wind_kmh': (0, np.inf), 'wind_dir_deg': (0, 360), 'rain_mm': (0, np.inf)}
+        for channel, (low, high) in domains.items():
+            invalid = frame[channel].notna() & ~frame[channel].between(low, high)
+            result += intervals(pack, station, channel, 'out_of_range', 'domain', invalid,
+                {'supported': True, 'lower_bound': low, 'upper_bound': high if np.isfinite(high) else None,
+                 'reason': f'{channel} outside its defined measurement domain'})
+        for channel in FLOORS:
+            values = frame[channel]
+            baseline = values.rolling(7, center=True, min_periods=5).median()
+            residual = values - baseline
+            scale = max(FLOORS[channel], float(residual.abs().median()) * 1.4826)
+            if channel in ('temp_c', 'pressure_hpa', 'rh_pct'):
+                spikes = residual.abs().gt(6 * scale)
+                for index in frame.index[spikes]:
+                    support = []
+                    timestamp = frame.loc[index, '_time']
+                    for other, peer in pack.weather.items():
+                        if other == station:
+                            continue
+                        match = peer.loc[peer._time.eq(timestamp), channel]
+                        series = peer[channel]
+                        peer_residual = series - series.rolling(7, center=True, min_periods=5).median()
+                        if len(match) == 1 and abs(float(peer_residual.loc[match.index[0]])) < 3 * FLOORS[channel]:
+                            support.append(other)
+                    result += intervals(pack, station, channel, 'spike', 'isolated', frame.index == index,
+                        {'supported': len(support) >= 2, 'departure': round(float(residual.loc[index]), 3),
+                         'threshold': round(6 * scale, 3), 'references': support,
+                         'reason': f'Isolated {channel} excursion with return; comparison stations do not share the excursion'})
+            groups = values.ne(values.shift()).cumsum()
+            sizes = frame.groupby(groups, sort=False).size()
+            for group in sizes.index[sizes * cadence >= pd.Timedelta(hours=12)]:
+                part = frame.loc[groups.eq(group)]
+                if len(part) * cadence < pd.Timedelta(hours=12) or part[channel].isna().all():
+                    continue
+                value = float(part[channel].iloc[0])
+                if channel == 'wind_kmh' and value == 0:
+                    continue
+                reference_ids = []
+                for other, peer in pack.weather.items():
+                    if other == station:
+                        continue
+                    sample = peer.loc[peer._time.between(part._time.min(), part._time.max()), channel]
+                    if len(sample) >= len(part) * .7 and sample.quantile(.95) - sample.quantile(.05) > 6 * FLOORS[channel]:
+                        reference_ids.append(other)
+                supported = len(reference_ids) >= 2
+                if channel == 'rh_pct' and value >= 99:
+                    sunny = part.ghi_wm2.ge(400) & part.temp_c.gt(15)
+                    supported &= part.loc[sunny, '_time'].dt.date.nunique() >= 3
+                result += intervals(pack, station, channel, 'flatline', 'constant', frame.index.isin(part.index),
+                    {'supported': bool(supported), 'constant_value': value, 'samples': len(part), 'minimum_hours': 12,
+                     'references': reference_ids, 'reason': f'{channel} unchanged for {len(part) * cadence.total_seconds() / 3600:.1f} hours; independent response evidence required'})
     return result

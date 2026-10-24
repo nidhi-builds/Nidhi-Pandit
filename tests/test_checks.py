@@ -32,3 +32,30 @@ def test_empty_edges_are_not_invented_gaps_and_reset_not_deduplicated(tmp_path):
     assert not any(c.subtype == 'records' for c in candidates)
     duplicates = [c for c in candidates if c.issue == 'duplicate_data']
     assert all(not c.evidence['supported'] for c in duplicates)
+
+
+def test_hard_ranges_spike_and_supported_flatline(tmp_path):
+    frames = make_pack(tmp_path, days=4)
+    frames['A'].loc[10, 'rh_pct'] = 101
+    frames['A'].loc[11, 'rain_mm'] = -.2
+    frames['A'].loc[12, 'wind_kmh'] = -1
+    frames['A'].loc[13, 'wind_dir_deg'] = 361
+    frames['A'].loc[100, 'temp_c'] += 15
+    frames['A'].loc[288:575, 'pressure_hpa'] = 850
+    save(tmp_path, 'A', frames['A'])
+    candidates = check_basic(load_pack(tmp_path))
+    assert len([c for c in candidates if c.issue == 'out_of_range']) == 4
+    assert any(c.issue == 'spike' and c.channel == 'temp_c' and c.evidence['supported'] for c in candidates)
+    assert any(c.issue == 'flatline' and c.channel == 'pressure_hpa' and c.evidence['supported'] for c in candidates)
+
+
+def test_saturation_dryness_darkness_and_calm_are_not_excluded(tmp_path):
+    frames = make_pack(tmp_path, days=3)
+    for station, frame in frames.items():
+        frame['rh_pct'] = 100
+        frame['ghi_wm2'] = 0
+        frame['wind_kmh'] = 0
+        frame['wind_dir_deg'] = 360
+        save(tmp_path, station, frame)
+    candidates = check_basic(load_pack(tmp_path))
+    assert not any(c.issue in ('out_of_range', 'flatline', 'spike') and c.evidence['supported'] for c in candidates)

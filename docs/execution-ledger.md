@@ -17,7 +17,7 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 | 0 | Passed | fbf0546: plan committed; ZIP/PDF excluded from tracking |
 | 1 | Passed | RED: missing ridgeline module; GREEN: 7 I/O tests, 2026-10-25 |
 | 2 | Passed | 13 combined tests pass; GPS/parser, offset/drift, gaps, duplicates, provenance |
-| 3 | Pending | |
+| 3 | Passed | 15 tests; 56 station/channel plots reviewed; independent evidence ledger frozen |
 | 4 | Pending | |
 | 5 | Pending | |
 | 6 | Pending | |
@@ -26,3 +26,5 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 - Stage 1 environment ruling: pytest temp-directory ACLs require an escalated local test run; `python -m pytest tests/test_io.py -q` passed 7/7. Test artifacts remain under ignored tmp/. Dependencies were already installed; no download needed.
 
 - Stage 2 RED: absent GPS/basic modules. A structural regression exposed an invented gap between appended retransmissions; fixed by checking whether expected observations already exist. GREEN: 13/13 combined tests. Final benchmark remains pending.
+
+- Stage 3: original-pack ledger frozen before relational code, with direct/uncertain labels separated. RED sensor assertions failed; GREEN 15/15 combined tests. Full data and plots remain private.
