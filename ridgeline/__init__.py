@@ -1,0 +1,1 @@
+"""Offline weather evidence checker."""

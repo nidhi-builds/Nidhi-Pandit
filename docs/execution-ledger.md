@@ -14,11 +14,13 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 
 | Stage | Status | Evidence |
 |---|---|---|
-| 0 | In progress | Approved design and metrics; privacy rules written |
-| 1 | Pending | |
+| 0 | Passed | fbf0546: plan committed; ZIP/PDF excluded from tracking |
+| 1 | Passed | RED: missing ridgeline module; GREEN: 7 I/O tests, 2026-10-25 |
 | 2 | Pending | |
 | 3 | Pending | |
 | 4 | Pending | |
 | 5 | Pending | |
 | 6 | Pending | |
 | 7 | Pending | |
+
+- Stage 1 environment ruling: pytest temp-directory ACLs require an escalated local test run; `python -m pytest tests/test_io.py -q` passed 7/7. Test artifacts remain under ignored tmp/. Dependencies were already installed; no download needed.
