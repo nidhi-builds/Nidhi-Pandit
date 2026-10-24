@@ -1,0 +1,13 @@
+# Assignment inputs and private investigations
+*.zip
+/Aeron-AI-Research-Engineer-Intern-AssignmentNew.pdf
+/private/
+/tmp/
+/original_pack_review.csv
+# Python/local tool state
+__pycache__/
+.pytest_cache/
+.venv/
+.superpowers/
+.worktrees/
+*.pyc

@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "development_seeds": [11, 23, 37],
+  "final_seeds": [104729, 130363, 155921, 196613, 262147, 314159, 393241, 499979, 524287, 611953, 700001, 786433, 860281, 900001, 999983, 1100009, 1200007, 1300021, 1400017, 1500007],
+  "policy": "Final cases are not used for tuning. Preserve failures; retire a manifest to regression before any tuning based on it. Detector settings and generator hashes must be frozen before final execution."
+}
