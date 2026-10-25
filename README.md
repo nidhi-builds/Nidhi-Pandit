@@ -1,6 +1,6 @@
 Nidhi Pandit
 nidhipandit2907@gmail.com
-Video: [ADD THREE-MINUTE RECORDING LINK]
+Video: https://drive.google.com/file/d/10hIPeSOAqdGG50ZHGtynffKO2-NIii9v/view?usp=sharing
 Run: python checker.py <pack-folder>
 
 # Ridgeline weather network checker
@@ -60,7 +60,3 @@ python -m pytest -q --ignore=tests/test_development.py --ignore=tests/test_bench
 See [validation results](docs/validation-results.md) for measured scores and gate status, and [evaluation definitions](docs/EVALUATION.md) for exact denominators, test envelopes and limits. Repeating the frozen final suite is regression checking, not a fresh blind evaluation.
 
 The original pack has no supplied authoritative labels. Its evidence audit is reported separately from known-answer synthetic metrics. Local weather, an unreliable baseline and weak spatial comparisons can prevent a defensible decision. Review and limited-assessment indicators are part of the result.
-
-## Applicant-owned submission work
-
-Replace the video placeholder, review the proposed technician visit, write DECISIONS.md personally (including the independent no-code/no-AI calculation), and add actual complete AI-chat exports. DECISIONS.md is intentionally kept local and excluded from this publication. Do not commit the datapack or extracted raw copies. Follow the invitation deadline and repository naming/submission rules.
