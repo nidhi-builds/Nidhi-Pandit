@@ -20,7 +20,7 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 | 3 | Passed | 15 tests; 56 station/channel plots reviewed; independent evidence ledger frozen |
 | 4 | Passed | 140 fault cases + 140 matched controls; per-family precision/recall 100%; good-data loss 0 |
 | 5 | Passed | 32 core tests; deterministic CSV/JSON; action, precedence, traceability and count checks |
-| 6 | Pending | |
+| 6 | Passed (engineering) | Report/context tests pass; real Chrome screenshot and two-page A4 PDF verified; visit proposal pending applicant review |
 | 7 | Pending | |
 
 - Stage 1 environment ruling: pytest temp-directory ACLs require an escalated local test run; `python -m pytest tests/test_io.py -q` passed 7/7. Test artifacts remain under ignored tmp/. Dependencies were already installed; no download needed.
@@ -35,3 +35,5 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 
 - Stage 5 RED: decisions/output functions absent. GREEN: 32/32 core tests. Keep cannot override a confirmed all-channel timing fault; corrected clock resets remain distinct records.
 - Ruling: full CLI wiring moves to Stage 6 with the real renderer; Stage 5 tests real output serialization three times rather than shipping a temporary fake HTML renderer. Cost: CLI integration defects are caught at Stage 6, before final release.
+
+- Stage 6 RED: renderer/context loader absent. GREEN: 15 report/I/O/decision integration tests; original CLI generated 42 flags and 31 reviews. Chrome rendered the report and printed 2 A4 pages. Visit S02 is a proposal based on stronger pressure evidence; applicant-owned submission decisions remain pending.

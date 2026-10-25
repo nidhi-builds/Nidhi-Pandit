@@ -125,8 +125,24 @@ def decide(pack,candidates):
     rules=hashlib.sha256(b''.join((Path(__file__).parent/name).read_bytes() for name in ('config.py','io.py','gps.py','checks.py','relationships.py','decisions.py'))).hexdigest()
     summary=summarize(pack,merged,reviews)
     evidence={'rule_version':VERSION,'rule_fingerprint':rules,'input_fingerprint':fingerprint(pack.input_hashes),
-              'input_hashes':pack.input_hashes,'flags':entries,'diagnostics':pack.diagnostics,'summary':summary}
+              'input_hashes':pack.input_hashes,'flags':entries,'diagnostics':pack.diagnostics,'summary':summary,
+              'plot_data':plot_data(pack,merged)}
     return RunResult(flags,sorted(reviews,key=lambda r:(r['station_id'],r['start_utc'],r['channel'],r['candidate_issue'])),evidence,summary)
+
+
+def plot_data(pack,accepted):
+    """Bounded supporting snippets, never the complete input pack."""
+    plots=[]
+    for c,action in sorted(accepted,key=lambda item:({'flatline':0,'sensor_bias':1}.get(item[0].issue,10),item[0].station_id)):
+        if c.issue not in ('flatline','sensor_bias') or c.channel not in CHANNELS or len(plots)>=2:continue
+        if any(p['station_id']==c.station_id and p['channel']==c.channel for p in plots):continue
+        start=c.start-pd.Timedelta(hours=24);end=min(c.end+pd.Timedelta(hours=24),c.start+pd.Timedelta(days=6))
+        frame=pack.weather[c.station_id]
+        sample=frame.loc[frame._logger_time.between(start,end)].drop_duplicates('_time').set_index('_logger_time')[c.channel].resample('h').median().dropna()
+        plots.append({'station_id':c.station_id,'channel':c.channel,'issue':c.issue,'start':stamp(c.start),'end':stamp(c.end),
+            'times':[stamp(t) for t in sample.index],'values':[float(v) for v in sample],
+            'caption':f'{c.station_id} {c.channel}: hourly medians around the detected {c.issue.replace("_"," ")} interval; screening evidence, not calibration'})
+    return plots
 
 
 def summarize(pack,accepted,reviews):

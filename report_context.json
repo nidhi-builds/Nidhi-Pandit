@@ -1,0 +1,13 @@
+{
+  "input_fingerprint": "2c2b53c4e399e7270e1fe639ebcec35147261b84f85e4649e514916f277cfe6d",
+  "station_id": "S02",
+  "first_check": "Compare station pressure with a co-located calibrated reference before changing any setting.",
+  "tasks": [
+    "0-10 min: inspect replacement board, units, vent and configuration.",
+    "10-40 min: compare simultaneous readings with a calibrated portable reference; record the offset and stability.",
+    "40-60 min: verify the board calibration procedure, record serial/configuration and capture before/after readings; change calibration only with documented support."
+  ],
+  "runner_up": "S07",
+  "reason": "S02 has a measured persistent pressure discontinuity and stronger independent comparison evidence. S07 wind scaling is a serious alternative, but station-to-station wind differences make that diagnosis less certain. Bring a calibrated pressure reference; if unavailable, arrange it before visiting.",
+  "review_status": "proposed; applicant to review"
+}

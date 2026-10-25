@@ -75,6 +75,21 @@ def fingerprint(hashes: dict[str, str]) -> str:
     return hashlib.sha256(json.dumps(hashes, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
+def load_report_context(output_dir: Path, input_hashes, station_ids):
+    path=output_dir/'report_context.json'
+    if not path.is_file(): return None
+    try:
+        context=json.loads(path.read_text(encoding='utf-8'))
+        required={'input_fingerprint','station_id','first_check','tasks','runner_up','reason'}
+        if not isinstance(context,dict) or not required.issubset(context): return None
+        if context['input_fingerprint']!=fingerprint(input_hashes): return None
+        if context['station_id'] not in station_ids or context['runner_up'] not in station_ids: return None
+        if not isinstance(context['tasks'],list) or not all(isinstance(t,str) for t in context['tasks']): return None
+        return context
+    except (ValueError,OSError):
+        return None
+
+
 def atomic_write(path: Path, content: str) -> None:
     descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=f'.{path.name}.', suffix='.tmp')
     try:
