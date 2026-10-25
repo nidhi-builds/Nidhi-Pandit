@@ -1,6 +1,6 @@
-[Your full name]
-[Your email]
-[Three-minute video link]
+Nidhi Pandit
+nidhipandit2907@gmail.com
+Video: [ADD THREE-MINUTE RECORDING LINK]
 Run: python checker.py <pack-folder>
 
 # Ridgeline weather network checker
@@ -21,7 +21,6 @@ Run from the directory where you want the outputs. The command can also be calle
 - [Design and final fault vocabulary](docs/superpowers/specs/2026-10-24-weather-checker-design.md)
 - [Stage-gated implementation plan](docs/superpowers/plans/2026-10-24-weather-checker.md)
 - [Exact evaluation contract](docs/EVALUATION.md)
-- [Applicant-owned decisions](DECISIONS.md)
 - [AI-log export instructions](ai_logs/README.md)
 
 ## Outputs and actions
@@ -64,4 +63,4 @@ The original pack has no supplied authoritative labels. Its evidence audit is re
 
 ## Applicant-owned submission work
 
-Replace the opening identity/video placeholders, review the proposed technician visit, write DECISIONS.md personally (including the independent no-code/no-AI calculation), and add actual complete AI-chat exports. Do not commit the datapack or extracted raw copies. Follow the invitation deadline and repository naming/submission rules.
+Replace the video placeholder, review the proposed technician visit, write DECISIONS.md personally (including the independent no-code/no-AI calculation), and add actual complete AI-chat exports. DECISIONS.md is intentionally kept local and excluded from this publication. Do not commit the datapack or extracted raw copies. Follow the invitation deadline and repository naming/submission rules.
