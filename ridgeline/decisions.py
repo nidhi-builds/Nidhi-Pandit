@@ -74,6 +74,8 @@ def decide(pack,candidates):
         if c.issue not in ISSUES or c.channel not in (*CHANNELS,'all','metadata'):
             raise ValueError('Invalid internal issue or channel')
         if not c.evidence.get('supported') or not stamp(c.start) or not stamp(c.end):
+            if c.issue=='duplicate_data' and any(d.get('check')=='clock_coverage' and d.get('station_id')==c.station_id and any(f'data/{c.station_id}.csv:{r}' in c.row_refs for r in d.get('rows',[])) for d in pack.diagnostics):
+                continue  # The precise clock-edge review already explains these label collisions.
             reviews.append(review(c));continue
         if c.start>c.end: raise ValueError('Reversed flag interval')
         action=action_for(c)
@@ -119,9 +121,9 @@ def decide(pack,candidates):
                         'limitations':'Evidence-based screening; no laboratory calibration or authoritative truth supplied'})
     for d in pack.diagnostics:
         if d.get('check')=='clock_coverage':
-            f=pack.weather[d['station_id']];part=f.loc[f._row.isin(d['rows'])]
-            reviews.append(dict(station_id=d['station_id'],channel='all',start_utc=stamp(part._logger_time.min()),end_utc=stamp(part._logger_time.max()),
-                candidate_issue='clock_error',reason=d['reason']+'; source rows '+ranges(d['rows']),needed_evidence='Additional valid GPS anchors'))
+            f=pack.weather[d['station_id']]
+            for part in intervals(pack,d['station_id'],'all','clock_error','unsupported_edge',f._row.isin(d['rows']),{'supported':False,'reason':d['reason']}):
+                item=review(part,d['reason']+'; '+sources(part.row_refs));item['needed_evidence']='Additional valid GPS anchors';reviews.append(item)
     rules=hashlib.sha256(b''.join((Path(__file__).parent/name).read_bytes() for name in ('config.py','io.py','gps.py','checks.py','relationships.py','decisions.py'))).hexdigest()
     summary=summarize(pack,merged,reviews)
     evidence={'rule_version':VERSION,'rule_fingerprint':rules,'input_fingerprint':fingerprint(pack.input_hashes),
@@ -173,7 +175,7 @@ def summarize(pack,accepted,reviews):
             counts=state.loc[observed,channel].value_counts()
             channel_counts[channel]={k:int(counts.get(k,0)) for k in ('screened','exclude','correct','review')}
             channel_counts[channel]['total_observed']=int(observed.sum())
-            channel_counts[channel]['limited_comparison']=any(d.get('station_id')==station and d.get('channel')==channel and d.get('check')=='relationships' for d in pack.diagnostics)
+            channel_counts[channel]['limited_comparison']=any(d.get('station_id')==station and d.get('channel')==channel and d.get('check') in ('relationships','conditional_bias','rainfall_underresponse') for d in pack.diagnostics)
         stations.append({'station_id':station,'name':str(pack.stations.loc[station,'name']),'channels':channel_counts,
             'duplicate_copies':len(redundant),'missing_records':sum(int(c.evidence.get('missing_records',0)) for c,a in accepted if c.station_id==station and c.subtype=='records'),
             'metadata_review':any(c.station_id==station and c.channel=='metadata' for c,a in accepted)})

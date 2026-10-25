@@ -95,6 +95,44 @@ def native_event(pack, station, channel, issue, subtype, start, end, evidence, e
     return intervals(pack, station, channel, issue, subtype, mask, evidence)
 
 
+def refine_step(pack,station,channel,peers,hour,direction,floor):
+    frame=pack.weather[station]
+    jumps=[]
+    for peer in peers:
+        series=pack.weather[peer].dropna(subset=['_time']).groupby('_time')[channel].median().reindex(frame._time)
+        values=pd.Series(series.to_numpy(),index=frame.index)
+        residual=np.log(frame[channel].where(frame[channel]>=2)/values.where(values>=2)) if channel=='wind_kmh' else frame[channel]-values
+        jumps.append(residual.diff()*direction)
+    changes=pd.concat(jumps,axis=1)
+    eligible=changes.gt(floor/2).sum(axis=1).ge(2) & frame._time.between(hour-pd.Timedelta(hours=1),hour+pd.Timedelta(hours=1))
+    if eligible.any():return frame.loc[changes.loc[eligible].median(axis=1).idxmax(),'_time']
+    return hour
+
+
+def step_regimes(pack,station,channel,peers,residuals,baseline_end,thresholds,floor,evidence):
+    delta=residuals.diff()
+    changes=delta.gt(floor).sum(axis=1).ge(2)|delta.lt(-floor).sum(axis=1).ge(2)
+    start=None;offset=None;events=[]
+    for time in changes.index[changes & (changes.index>=baseline_end)]:
+        before=residuals.loc[(residuals.index>=time-pd.Timedelta(hours=48)) & (residuals.index<time)]
+        after=residuals.loc[(residuals.index>=time) & (residuals.index<time+pd.Timedelta(hours=48))]
+        if before.notna().sum().min()<36 or after.notna().sum().min()<36:continue
+        old,new=before.median(),after.median();jump=new-old
+        if start is None:
+            high=(new>thresholds)&(jump>floor);low=(new<-thresholds)&(jump<-floor)
+            if high.sum()>=2 or low.sum()>=2:
+                direction=1 if high.sum()>=2 else -1
+                start=refine_step(pack,station,channel,peers,time,direction,floor)
+                offset=float(new.median())
+        elif (new.abs()<floor/2).sum()>=2 and (jump*np.sign(offset)<-floor).sum()>=2:
+            end=refine_step(pack,station,channel,peers,time,-np.sign(offset),floor)
+            events+=native_event(pack,station,channel,'sensor_bias','multiplicative' if channel=='wind_kmh' else 'additive',start,end-pd.Timedelta(hours=1),dict(evidence,departure=round(offset,3),persistence='48-hour regime confirmation; ends only at a supported return to baseline'))
+            start=None
+    if start is not None:
+        events+=native_event(pack,station,channel,'sensor_bias','multiplicative' if channel=='wind_kmh' else 'additive',start,residuals.index[-1],dict(evidence,departure=round(offset,3),persistence='48-hour regime confirmation; no supported return to baseline observed'))
+    return events
+
+
 def bias_events(pack, hourly, station, channel, peers):
     residuals, baseline_end = paired_residuals(hourly, station, peers, channel)
     combined = residuals.median(axis=1)
@@ -127,7 +165,9 @@ def bias_events(pack, hourly, station, channel, peers):
                         result += native_event(pack, station, channel, 'sensor_bias', 'gradual', first, combined.index[-1], evidence)
                         break
     if gradual_start is None:
-        for start, end in hourly_runs((high | low) & valid & (residuals.index >= baseline_end)):
+        regimes=step_regimes(pack,station,channel,peers,residuals,baseline_end,thresholds,floor,base_evidence)
+        result+=regimes
+        for start, end in ([] if regimes else hourly_runs((high | low) & valid & (residuals.index >= baseline_end))):
             if end - start < pd.Timedelta(hours=23):
                 continue
             evidence = dict(base_evidence, departure=round(float(combined.loc[start:end].median()), 3),
@@ -149,6 +189,9 @@ def bias_events(pack, hourly, station, channel, peers):
                     result += native_event(pack, station, channel, 'sensor_bias', 'conditional', start, end,
                         dict(base_evidence, departure=round(float(excess.loc[start:end].median() - baseline_high), 3),
                              eligible_hours=int(affected.sum()), reason='Temperature excess increases in strong light and weak wind relative to baseline and night-time comparisons'), extra)
+        else:
+            pack.diagnostics.append({'station_id':station,'channel':'temp_c','check':'conditional_bias',
+                'reason':'Insufficient matched strong-light/low-wind baseline or dark hours; radiation-related bias not established'})
     return result
 
 
@@ -158,6 +201,8 @@ def rain_events(pack, hourly, station, peers):
     wet = rain.gt(0).sum(axis=1).ge(2)
     times = wet.index[wet]
     if len(times) == 0:
+        pack.diagnostics.append({'station_id':station,'channel':'rain_mm','check':'rainfall_underresponse',
+            'reason':'No corroborated regional rain episodes; gauge response cannot be independently assessed'})
         return []
     groups = pd.Series(times, index=times).diff().ge(pd.Timedelta(hours=6)).cumsum()
     episodes = []
@@ -172,6 +217,9 @@ def rain_events(pack, hourly, station, peers):
         episodes.append((start, end, observed, expected, usable))
     failures = [e for e in episodes if np.isfinite(e[2]) and e[2] <= e[3] * .1]
     response = [e for e in episodes if e[2] >= e[3] * .25]
+    if len(episodes)<3:
+        pack.diagnostics.append({'station_id':station,'channel':'rain_mm','check':'rainfall_underresponse',
+            'reason':f'Only {len(episodes)} qualifying regional rain episodes; repeated-underresponse check needs at least three'})
     result = []
     if len(failures) >= 3:
         for start, end, observed, expected, usable in failures:
@@ -207,4 +255,7 @@ def check_relationships(pack, basic):
         peers = references(pack, hourly, station, 'pressure_hpa')
         if len(peers) >= 2:
             result += rain_events(pack, hourly, station, peers)
+        else:
+            pack.diagnostics.append({'station_id':station,'channel':'rain_mm','check':'rainfall_underresponse',
+                'reason':'Fewer than two suitable regional references; gauge response not independently assessed'})
     return result

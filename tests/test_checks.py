@@ -68,3 +68,20 @@ def test_unverified_clock_collision_is_not_confirmed_conflict(tmp_path):
     pack=load_pack(tmp_path);pack.weather['A'].loc[len(f),'_time']=pd.NaT
     duplicates=[c for c in check_basic(pack) if c.issue=='duplicate_data']
     assert duplicates and all(not c.evidence['supported'] for c in duplicates)
+
+
+def test_recovery_from_stuck_sensor_is_not_an_isolated_spike(tmp_path):
+    frames=make_pack(tmp_path,days=5);f=frames['A']
+    f.loc[:299,'temp_c']=6.5
+    f.loc[300:304,'temp_c']=[.9,1.6,2.3,2.9,3.5]
+    save(tmp_path,'A',f)
+    candidates=check_basic(load_pack(tmp_path))
+    recovery=pd.Timestamp(f.loc[300,'timestamp_utc'])
+    assert not any(c.issue=='spike' and c.start==recovery and c.evidence['supported'] for c in candidates)
+
+
+def test_two_record_spike_is_one_event_with_return(tmp_path):
+    frames=make_pack(tmp_path,days=4)
+    frames['A'].loc[200:201,'temp_c']+=12;save(tmp_path,'A',frames['A'])
+    spikes=[c for c in check_basic(load_pack(tmp_path)) if c.station_id=='A' and c.issue=='spike' and c.evidence['supported']]
+    assert len(spikes)==1 and len(spikes[0].row_refs)==2

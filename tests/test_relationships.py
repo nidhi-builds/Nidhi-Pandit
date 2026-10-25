@@ -94,3 +94,26 @@ def test_irradiance_in_astronomical_night_needs_review(tmp_path):
     pack=load_pack(tmp_path)
     candidates=check_relationships(pack,check_basic(pack))
     assert any(c.channel=='ghi_wm2' and c.subtype=='irradiance_timing' and not c.evidence['supported'] for c in candidates)
+
+
+def test_confirmed_step_survives_short_residual_threshold_crossings(tmp_path):
+    frames=make_pack(tmp_path,days=25)
+    onset=10*144
+    frames['A'].loc[onset:,'pressure_hpa']+=6
+    # Weather-dependent residual variation briefly weakens the pointwise signal,
+    # but the two reference relationships show no reversal of the board offset.
+    frames['A'].loc[15*144:16*144,'pressure_hpa']-=3.5
+    save(tmp_path,'A',frames['A'])
+    pack=load_pack(tmp_path);c=check_relationships(pack,check_basic(pack))
+    bias=[p for p in c if p.station_id=='A' and p.channel=='pressure_hpa' and p.subtype=='additive' and p.evidence['supported']]
+    assert len(bias)==1
+    assert bias[0].end==pack.weather['A']._logger_time.max()
+    assert len(bias[0].row_refs)==len(frames['A'])-onset
+
+
+def test_unavailable_conditional_and_rain_checks_are_disclosed(tmp_path):
+    frames=make_pack(tmp_path,days=18)
+    for station,f in frames.items():f['wind_kmh']=20;save(tmp_path,station,f)
+    pack=load_pack(tmp_path);check_relationships(pack,check_basic(pack))
+    assert any(d.get('station_id')=='A' and d.get('check')=='conditional_bias' for d in pack.diagnostics)
+    assert any(d.get('station_id')=='A' and d.get('check')=='rainfall_underresponse' for d in pack.diagnostics)

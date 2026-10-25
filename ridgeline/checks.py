@@ -78,19 +78,27 @@ def check_basic(pack):
             scale = max(FLOORS[channel], float(residual.abs().median()) * 1.4826)
             if channel in ('temp_c', 'pressure_hpa', 'rh_pct'):
                 spikes = residual.abs().gt(6 * scale)
-                for index in frame.index[spikes]:
+                positions=np.flatnonzero(spikes.to_numpy())
+                blocks=np.split(positions,np.flatnonzero(np.diff(positions)>1)+1) if len(positions) else []
+                for block in blocks:
+                    if len(block)>2:continue
+                    first,last=int(block[0]),int(block[-1])
+                    before=values.iloc[max(0,first-2):first].median()
+                    after=values.iloc[last+1:last+3].median()
+                    if not np.isfinite(before) or not np.isfinite(after) or abs(before-after)>3*FLOORS[channel]:
+                        continue  # A regime transition/recovery is not an excursion with return.
                     support = []
-                    timestamp = frame.loc[index, '_time']
+                    timestamps = frame.loc[block, '_time']
                     for other, peer in pack.weather.items():
                         if other == station:
                             continue
-                        match = peer.loc[peer._time.eq(timestamp), channel]
+                        match = peer.loc[peer._time.isin(timestamps), channel]
                         series = peer[channel]
                         peer_residual = series - series.rolling(7, center=True, min_periods=5).median()
-                        if len(match) == 1 and abs(float(peer_residual.loc[match.index[0]])) < 3 * FLOORS[channel]:
+                        if len(match) == len(block) and peer_residual.loc[match.index].abs().lt(3 * FLOORS[channel]).all():
                             support.append(other)
-                    result += intervals(pack, station, channel, 'spike', 'isolated', frame.index == index,
-                        {'supported': len(support) >= 2, 'departure': round(float(residual.loc[index]), 3),
+                    result += intervals(pack, station, channel, 'spike', 'isolated', frame.index.isin(block),
+                        {'supported': len(support) >= 2, 'departure': round(float(residual.loc[block].mean()), 3),
                          'threshold': round(6 * scale, 3), 'references': support,
                          'reason': f'Isolated {channel} excursion with return; comparison stations do not share the excursion'})
             groups = values.ne(values.shift()).cumsum()

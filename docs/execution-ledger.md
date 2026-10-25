@@ -21,7 +21,7 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 | 4 | Passed | 140 fault cases + 140 matched controls; per-family precision/recall 100%; good-data loss 0 |
 | 5 | Passed | 32 core tests; deterministic CSV/JSON; action, precedence, traceability and count checks |
 | 6 | Passed (engineering) | Report/context tests pass; real Chrome screenshot and two-page A4 PDF verified; visit proposal pending applicant review |
-| 7 | Pending | |
+| 7 | In progress | Original-pack audit regressions fixed; independent scorer and end-to-end tests pass |
 
 - Stage 1 environment ruling: pytest temp-directory ACLs require an escalated local test run; `python -m pytest tests/test_io.py -q` passed 7/7. Test artifacts remain under ignored tmp/. Dependencies were already installed; no download needed.
 
@@ -37,3 +37,7 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 - Ruling: full CLI wiring moves to Stage 6 with the real renderer; Stage 5 tests real output serialization three times rather than shipping a temporary fake HTML renderer. Cost: CLI integration defects are caught at Stage 6, before final release.
 
 - Stage 6 RED: renderer/context loader absent. GREEN: 15 report/I/O/decision integration tests; original CLI generated 42 flags and 31 reviews. Chrome rendered the report and printed 2 A4 pages. Visit S02 is a proposal based on stronger pressure evidence; applicant-owned submission decisions remain pending.
+
+- Stage 7 audit: RED regressions reproduced spurious flatline-recovery spikes, fragmented persistent offsets, two-record spike splitting and broad disjoint clock-edge review intervals. GREEN: each fix covered by a regression; core suite 40/40 and end-to-end suite 5/5 pass.
+- Ruling: once a step is independently corroborated before/after for 48 hours, retain the regime until a supported return to baseline instead of reclassifying every threshold dip as recovery. This avoids fragmented exclusions; risk: an unobserved gradual recovery may remain conservatively excluded. A finite abrupt-recovery regression passes.
+- Ruling: insufficient conditional-temperature or regional-rain context now marks limited assessment in the report rather than suggesting an independent all-clear.

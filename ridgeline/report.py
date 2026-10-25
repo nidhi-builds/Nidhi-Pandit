@@ -60,6 +60,7 @@ def render_report(result,context):
     reviews=''.join(f'<li><strong>{e(r["station_id"])} / {e(r["channel"])}:</strong> {e(r["reason"])}</li>' for r in result.reviews)
     diagnostics=''.join(f'<li>{e(d.get("station_id","Network"))} {e(d.get("channel",""))}: {e(d["reason"])}</li>' for d in result.evidence['diagnostics'])
     plots=''.join(figure(p) for p in result.evidence.get('plot_data',[])[:2] if p['times'])
+    cautions=' '.join(e(c) for c in context.get('cautions',[])) if context else ''
     total=sum(s['channels']['temp_c']['total_observed'] for s in stations)
     missing=sum(s['missing_records'] for s in stations);duplicates=sum(s['duplicate_copies'] for s in stations)
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ridgeline | Network health</title>
@@ -76,7 +77,7 @@ def render_report(result,context):
 <p class="legend">S: screened · X: exclude · C: correct first · R: review · L: insufficient comparison evidence · * verify coordinates. Counts refer to affected observed values; a row can contain mixed intervals.</p>
 {f'<p class="print-note">{len(stations)-15} further station rows appear in the screen version.</p>' if len(stations)>15 else ''}
 <div class="columns"><section><h2>Decisions that matter</h2><ul>{''.join(findings)}</ul></section><section><h2>One technician · one hour</h2><div class="visit">{visit}</div></section></div>
-{plots}<p class="foot">{e(summary['meaning'])}. {summary['review_events']} unresolved review intervals; full evidence and disabled checks are available on screen. All timestamps are UTC; clock instructions refer to source rows and original logger labels.</p>
+{plots}<p class="foot">{e(summary['meaning'])}. {summary['review_events']} unresolved review intervals; full evidence and disabled checks are available on screen. {cautions} All timestamps are UTC; clock instructions refer to source rows and original logger labels.</p>
 <section class="screen-only"><h2>Inspect the evidence</h2><p><a href="flags.csv" download>Download flags.csv</a> · <a href="review.csv">Review cases</a> · <a href="evidence.json">Audit evidence</a></p>
 <details><summary>Final flags ({len(result.flags)})</summary>{''.join(panels) or '<p>No final flags.</p>'}</details><details><summary>Unresolved cases ({len(result.reviews)})</summary><ul>{reviews or '<li>None recorded.</li>'}</ul></details><details><summary>Coverage and disabled checks</summary><ul>{diagnostics or '<li>No disabled checks recorded.</li>'}</ul></details></section>
 </main></body></html>'''

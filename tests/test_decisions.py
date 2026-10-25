@@ -67,3 +67,11 @@ def test_keep_requires_positive_evidence_and_cannot_hide_fault(tmp_path):
     assert not any(f.action=='keep' for f in result.flags)
     clock=Candidate('A','all','clock_error','drift',keep.start,keep.end,keep.row_refs,{'supported':True,'correctable':False,'reason':'Time is unreliable'})
     assert not any(f.action=='keep' for f in decide(pack,[keep,clock]).flags)
+
+
+def test_disjoint_clock_edges_are_not_one_long_review_interval(tmp_path):
+    make_pack(tmp_path,ids=('A',));pack=load_pack(tmp_path)
+    pack.diagnostics.append({'station_id':'A','check':'clock_coverage','rows':[2,3,288,289],'reason':'Outside GPS support'})
+    result=decide(pack,[])
+    assert len(result.reviews)==2
+    assert all(pd.Timestamp(r['end_utc'])-pd.Timestamp(r['start_utc'])<=pd.Timedelta(minutes=10) for r in result.reviews)
