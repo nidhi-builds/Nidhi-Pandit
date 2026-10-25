@@ -59,3 +59,12 @@ def test_saturation_dryness_darkness_and_calm_are_not_excluded(tmp_path):
         save(tmp_path, station, frame)
     candidates = check_basic(load_pack(tmp_path))
     assert not any(c.issue in ('out_of_range', 'flatline', 'spike') and c.evidence['supported'] for c in candidates)
+
+
+def test_unverified_clock_collision_is_not_confirmed_conflict(tmp_path):
+    frames=make_pack(tmp_path,ids=('A',))
+    f=frames['A'];extra=f.iloc[[10]].copy();extra['temp_c']+=2
+    save(tmp_path,'A',pd.concat([f,extra],ignore_index=True))
+    pack=load_pack(tmp_path);pack.weather['A'].loc[len(f),'_time']=pd.NaT
+    duplicates=[c for c in check_basic(pack) if c.issue=='duplicate_data']
+    assert duplicates and all(not c.evidence['supported'] for c in duplicates)

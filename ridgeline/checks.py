@@ -48,13 +48,11 @@ def check_basic(pack):
         for timestamp, part in frame.loc[duplicate_mask].groupby('_logger_time', sort=True):
             if len(part) < 2:
                 continue
+            if part._time.nunique() == len(part) and part._time.ne(part._logger_time).any():
+                continue  # GPS mapping established these as distinct observations, not duplicates.
             identical = part[list(CHANNELS)].nunique(dropna=False).le(1).all()
             # Distinct source segments with distinct values may be a clock collision, not retransmission.
-            supported = bool(identical or part._segment.nunique() == 1 or part._time.nunique() == 1)
-            if part._segment.nunique() > 1 and not identical and part._time.nunique() > 1:
-                supported = False
-            if part._segment.nunique() > 1 and not identical and part._time.equals(part._logger_time):
-                supported = False
+            supported = bool(identical or (part._segment.nunique() == 1 and part._time.notna().all()))
             if identical:
                 result.append(Candidate(station, 'all', 'duplicate_data', 'identical', timestamp, timestamp, row_refs(part),
                     {'supported': supported, 'retain_row': int(part._row.iloc[0]), 'remove_rows': part._row.iloc[1:].astype(int).tolist(),

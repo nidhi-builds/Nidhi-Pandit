@@ -50,3 +50,19 @@ def test_clock_drift_is_detected_without_guessed_correction(tmp_path):
     drift = [c for c in candidates if c.subtype == 'drift']
     assert len(drift) == 1 and drift[0].evidence['supported']
     assert not drift[0].evidence.get('correctable', False)
+
+
+def test_reset_with_second_jitter_creates_no_false_gap_or_duplicates(tmp_path):
+    from ridgeline.checks import check_basic
+    frames=make_pack(tmp_path,days=3,ids=('A',))
+    f=frames['A'];time=pd.to_datetime(f.timestamp_utc)
+    shifted=time.where(f.index<144,time-pd.Timedelta(hours=6))
+    f['timestamp_utc']=shifted.dt.strftime('%Y-%m-%d %H:%M');save(tmp_path,'A',f)
+    utc=pd.date_range('2024-05-01',periods=72,freq='h')
+    add_gps(tmp_path,'A',utc,np.where(np.arange(72)<24,1,-21599))
+    pack=load_pack(tmp_path);candidates=audit_gps(pack);analysis=apply_supported_time_map(pack,candidates)
+    assert analysis.weather['A'].loc[144,'_time']==pd.Timestamp('2024-05-02 00:00')
+    basic=check_basic(analysis)
+    assert not any(c.subtype=='records' for c in basic)
+    assert not any(c.issue=='duplicate_data' for c in basic)
+    assert analysis.weather['A']['_time'].iloc[-1] is pd.NaT

@@ -18,7 +18,7 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 | 1 | Passed | RED: missing ridgeline module; GREEN: 7 I/O tests, 2026-10-25 |
 | 2 | Passed | 13 combined tests pass; GPS/parser, offset/drift, gaps, duplicates, provenance |
 | 3 | Passed | 15 tests; 56 station/channel plots reviewed; independent evidence ledger frozen |
-| 4 | Pending | |
+| 4 | Passed | 140 fault cases + 140 matched controls; per-family precision/recall 100%; good-data loss 0 |
 | 5 | Pending | |
 | 6 | Pending | |
 | 7 | Pending | |
@@ -28,3 +28,7 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 - Stage 2 RED: absent GPS/basic modules. A structural regression exposed an invented gap between appended retransmissions; fixed by checking whether expected observations already exist. GREEN: 13/13 combined tests. Final benchmark remains pending.
 
 - Stage 3: original-pack ledger frozen before relational code, with direct/uncertain labels separated. RED sensor assertions failed; GREEN 15/15 combined tests. Full data and plots remain private.
+
+- Stage 4 RED: relational module missing; GREEN: 10 relational controls, 140 independent development faults and 140 equal-duration controls. Every family met its target and boundary gate; details in docs/development-results.json. Final seeds remain untested.
+- Stage 4 investigation reopened Stage 2: GPS reception jitter versus minute labels caused a false gap, and NaT clock-edge rows could be mistaken for confirmed duplicates. Each received a failing regression, root-cause fix and passing clock/basic suite (10/10). Edges outside GPS coverage remain unverified, not extrapolated.
+- Tooling incident: two pytest runs shared a basetemp. The complete development run ultimately passed; subsequent concurrent runs use separate workspace-local basetemps. No original inputs changed.

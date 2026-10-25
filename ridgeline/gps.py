@@ -89,11 +89,13 @@ def audit_gps(pack):
             drift = len(daily) >= 3 and abs(float(np.median(np.diff(daily)))) >= 60
             if abs(median) <= 60 and not drift:
                 continue
-            mask = f._logger_time.between(part.logger.min(), part.logger.max())
+            # Logger GPS reception has second jitter; weather labels have minute precision.
+            mask = f._logger_time.between(part.logger.min().floor('min'), part.logger.max().floor('min'))
             weather_segments = int(f._segment.max()) + 1 if len(f) else 0
             gps_segments = int(g.segment.max()) + 1
             if weather_segments > 1 and weather_segments == gps_segments:
                 mask &= f._segment.eq(segment)
+            scope = f._segment.eq(segment) if weather_segments == gps_segments else mask
             ambiguous = any(other != segment and max(part.logger.min(), otherpart.logger.min()) <= min(part.logger.max(), otherpart.logger.max())
                             for other, otherpart in g.groupby('segment') ) and weather_segments != gps_segments
             correctable = mad <= 5 and not drift and abs(median - round(median / 60) * 60) <= 5
@@ -104,6 +106,7 @@ def audit_gps(pack):
                 {'supported': supported, 'correctable': bool(correctable and supported), 'offset_seconds': round(median / 60) * 60,
                  'median_offset_seconds': median, 'mad_seconds': mad, 'valid_samples': len(part), 'threshold_seconds': 60,
                  'gps_rows': part.row.astype(int).tolist(), 'weather_rows': f.loc[mask, '_row'].astype(int).tolist(),
+                 'scope_rows': f.loc[scope, '_row'].astype(int).tolist(),
                  'reason': 'GPS/logger displacement; subtract offset only within supported source rows' if correctable else 'GPS-supported drift; no constant correction is justified'}))
         lat, lon = float(g.lat.median()), float(g.lon.median())
         spread = float(np.percentile(distance_m(lat, lon, g.lat.to_numpy(), g.lon.to_numpy()), 95))
@@ -123,6 +126,12 @@ def apply_supported_time_map(pack, candidates):
             continue
         f = result.weather[candidate.station_id]
         mask = f._row.isin(candidate.evidence['weather_rows'])
+        scope = f._row.isin(candidate.evidence.get('scope_rows', candidate.evidence['weather_rows']))
+        outside = scope & ~mask
+        if outside.any():
+            f.loc[outside, '_time'] = pd.NaT
+            result.diagnostics.append({'station_id': candidate.station_id, 'check': 'clock_coverage',
+                'rows': f.loc[outside, '_row'].astype(int).tolist(), 'reason': 'Clock-affected segment extends beyond GPS support; edge rows not corrected or used for timed comparisons'})
         if candidate.evidence.get('correctable'):
             f.loc[mask, '_time'] = f.loc[mask, '_logger_time'] - pd.Timedelta(seconds=candidate.evidence['offset_seconds'])
         else:
