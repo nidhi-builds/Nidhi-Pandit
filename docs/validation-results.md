@@ -55,4 +55,4 @@ There are 140 independent positive parent cases and 472 matched interval fragmen
 
 ## Remaining submission work
 
-Name/email/video link, personally written DECISIONS.md, independent no-AI hand calculation, genuine full AI-chat exports, visit confirmation and repository/form submission remain with the applicant. The user explicitly asked to fill personal details themselves. Nothing has been published or submitted.
+README name/email are filled and the project is published at https://github.com/nidhi-builds/Nidhi-Pandit. DECISIONS.md is intentionally retained locally and excluded from published history, as requested. The video link, personally written decisions, independent no-AI hand calculation, genuine full AI-chat exports, visit confirmation and submission form remain with the applicant.

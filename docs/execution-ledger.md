@@ -52,3 +52,7 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 - Final verification: all 76 collected tests passed across core (62), sealed development (7 groups) and first locked benchmark (7 groups). Locked precision/recall 100% per tested family, worst good-data loss 0.04998%; no final-test tuning. Machine-readable results and freeze hashes are committed.
 - Original-pack audit: 39 final flags, all source-reviewed; 112 sampled unflagged windows visually inspected; four independently identified S03 extreme spikes reconciled. Input bytes still match the ZIP. Three full output runs were byte-identical; Chrome keyboard/mobile/2-page A4 checks pass.
 - Finishing ruling: keep the new local implementation branch and existing workspace. There is no upstream/base branch or remote to merge into; publication was not requested. Personal submission items remain open as requested by the user.
+
+## Publication update — 2026-10-25
+
+The user subsequently authorized publication to `nidhi-builds/Nidhi-Pandit`, supplied README name/email and requested a video placeholder, with DECISIONS.md excluded. The published `main` branch preserves development commits with that file removed from every tree; its local copy and the original local `implementation` branch are preserved. Earlier commit identifiers in this ledger refer to the original local history. The private pack and investigations remain untracked. Publication changes no detector code or measured validation result.
