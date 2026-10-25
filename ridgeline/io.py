@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+from dataclasses import asdict
 import numpy as np
 import pandas as pd
 from .config import CHANNELS, FIELDS
@@ -91,3 +92,13 @@ def csv_text(rows, fields=FIELDS):
     writer.writeheader()
     writer.writerows(rows)
     return stream.getvalue()
+
+
+def write_outputs(result, html: str, output_dir: Path):
+    review_fields=('station_id','channel','start_utc','end_utc','candidate_issue','reason','needed_evidence')
+    outputs={'flags.csv':csv_text([asdict(f) for f in result.flags]),
+             'review.csv':csv_text(result.reviews,review_fields),
+             'evidence.json':json.dumps(result.evidence,sort_keys=True,indent=2,allow_nan=False,default=str)+'\n',
+             'report.html':html}
+    # Serialize everything before replacing any existing result.
+    for name,content in outputs.items(): atomic_write(output_dir/name,content)

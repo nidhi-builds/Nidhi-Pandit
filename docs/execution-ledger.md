@@ -19,7 +19,7 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 | 2 | Passed | 13 combined tests pass; GPS/parser, offset/drift, gaps, duplicates, provenance |
 | 3 | Passed | 15 tests; 56 station/channel plots reviewed; independent evidence ledger frozen |
 | 4 | Passed | 140 fault cases + 140 matched controls; per-family precision/recall 100%; good-data loss 0 |
-| 5 | Pending | |
+| 5 | Passed | 32 core tests; deterministic CSV/JSON; action, precedence, traceability and count checks |
 | 6 | Pending | |
 | 7 | Pending | |
 
@@ -32,3 +32,6 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 - Stage 4 RED: relational module missing; GREEN: 10 relational controls, 140 independent development faults and 140 equal-duration controls. Every family met its target and boundary gate; details in docs/development-results.json. Final seeds remain untested.
 - Stage 4 investigation reopened Stage 2: GPS reception jitter versus minute labels caused a false gap, and NaT clock-edge rows could be mistaken for confirmed duplicates. Each received a failing regression, root-cause fix and passing clock/basic suite (10/10). Edges outside GPS coverage remain unverified, not extrapolated.
 - Tooling incident: two pytest runs shared a basetemp. The complete development run ultimately passed; subsequent concurrent runs use separate workspace-local basetemps. No original inputs changed.
+
+- Stage 5 RED: decisions/output functions absent. GREEN: 32/32 core tests. Keep cannot override a confirmed all-channel timing fault; corrected clock resets remain distinct records.
+- Ruling: full CLI wiring moves to Stage 6 with the real renderer; Stage 5 tests real output serialization three times rather than shipping a temporary fake HTML renderer. Cost: CLI integration defects are caught at Stage 6, before final release.
