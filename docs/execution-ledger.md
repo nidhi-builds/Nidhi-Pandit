@@ -18,10 +18,10 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 | 1 | Passed | RED: missing ridgeline module; GREEN: 7 I/O tests, 2026-10-25 |
 | 2 | Passed | 13 combined tests pass; GPS/parser, offset/drift, gaps, duplicates, provenance |
 | 3 | Passed | 15 tests; 56 station/channel plots reviewed; independent evidence ledger frozen |
-| 4 | Passed | 140 fault cases + 140 matched controls; per-family precision/recall 100%; good-data loss 0 |
+| 4 | Passed (final configuration) | 140 development faults + 140 controls; all family precision/recall 100%; good-data loss within 1% |
 | 5 | Passed | 32 core tests; deterministic CSV/JSON; action, precedence, traceability and count checks |
 | 6 | Passed (engineering) | Report/context tests pass; real Chrome screenshot and two-page A4 PDF verified; visit proposal pending applicant review |
-| 7 | In progress | Original-pack audit regressions fixed; independent scorer and end-to-end tests pass |
+| 7 | Engineering passed; submission pending | 62 core + 7 development + 7 locked groups pass; source audit, 3-run reproducibility and Chrome QA pass |
 
 - Stage 1 environment ruling: pytest temp-directory ACLs require an escalated local test run; `python -m pytest tests/test_io.py -q` passed 7/7. Test artifacts remain under ignored tmp/. Dependencies were already installed; no download needed.
 
@@ -48,3 +48,7 @@ User approved execution on 2026-10-25, using Ponytail and Superpowers, with succ
 - Expanded development run initially missed four spike cases (80% recall); failure preserved in docs/development-failure.json. A trend-aware outside-window return regression fixed the cause, and the sealed full development gate passed all seven families (140 faults + 140 controls).
 - Final: minor addressed: benchmark generator now varies dates/cadence/station IDs, exercises temperature/pressure/humidity flatlines and spikes, one/two-record spikes and temperature/pressure drift. The precise tested footprint is documented; broad parameter-envelope claims remain limited.
 - Final review declined-to-judge rulings: final benchmark and original reconciliation are executed in Stage 7; applicant conclusions/dispatch confirmation remain applicant-owned; print pagination is verified with Chrome; universal meteorological validity and 500-station deployment are outside this small checker and no such certification is claimed.
+
+- Final verification: all 76 collected tests passed across core (62), sealed development (7 groups) and first locked benchmark (7 groups). Locked precision/recall 100% per tested family, worst good-data loss 0.04998%; no final-test tuning. Machine-readable results and freeze hashes are committed.
+- Original-pack audit: 39 final flags, all source-reviewed; 112 sampled unflagged windows visually inspected; four independently identified S03 extreme spikes reconciled. Input bytes still match the ZIP. Three full output runs were byte-identical; Chrome keyboard/mobile/2-page A4 checks pass.
+- Finishing ruling: keep the new local implementation branch and existing workspace. There is no upstream/base branch or remote to merge into; publication was not requested. Personal submission items remain open as requested by the user.

@@ -1,0 +1,15 @@
+{
+  "control_cases": 20,
+  "fn": 0,
+  "fp": 0,
+  "good_cells": 1747160,
+  "good_data_loss": 0.0,
+  "independent_cases": 20,
+  "lost_good_cells": 0,
+  "manifest_sha256": "7deb17a46fd35822a250bc5d3b7297c3563293bb759190668c615866cc15139d",
+  "max_boundary_minutes": 0.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "rule_fingerprint": "6da6adce90b0f80284ef54be1a6cbd109f30c0906557e68580f3c97ef85bd0bb",
+  "tp": 20
+}

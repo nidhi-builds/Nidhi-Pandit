@@ -1,0 +1,6 @@
+{
+  "browser": "Chrome headless",
+  "keyboard_summary_enter": true,
+  "mobile_no_body_overflow": true,
+  "a4_pages": 2
+}

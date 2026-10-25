@@ -1,6 +1,6 @@
 # Ridgeline weather checker design
 
-Status: proposed design for review; no checker has been implemented or evaluated.
+Status: user-approved design implemented and evaluated on 2026-10-25. The execution ledger records justified refinements; measured results are in docs/validation-results.md. Applicant-owned submission tasks remain pending.
 
 ## Purpose and chosen approach
 
@@ -58,6 +58,8 @@ These are explicit engineering starting values, not published universal weather-
 
 - **Baseline:** hourly median aggregates for continuous-channel reference fitting; retain native cadence for final flags. Require at least seven days of overlapping eligible data and 70% paired hourly coverage in that span. Use median/MAD residuals and hourly-change agreement, not equality of absolute measurements. Pressure references need hourly-change correlation >=0.7; temperature references >=0.5. Reference selection for other channels also requires their channel-specific controls to pass. If three references disagree substantially, do not vote through a fault; downgrade to review.
 - **Baseline contamination:** fit candidate pre/post regimes separately; do not let an apparent post-change segment redefine the whole baseline. Exclude previously identified faults. A fault present for the entire pack may be unidentifiable; do not claim its detection without independent evidence. Refitting is limited to one exclusion/refit pass for predictable behaviour.
+- **Implemented reference safety:** shared `reference.py` masks suspect and conflicting values before fitting. Basic spike/flatline corroboration requires seven eligible days of hourly-change agreement outside candidate intervals and may use all qualified peers; persistent bias selection remains capped at three. Short packs retain candidates for review. Two constant failed references cannot corroborate a spike.
+- **Implemented replay safety:** equal values alone never authorize deletion across an unverified reset. A varied, fully matching earlier block additionally needs at least six valid GPS-date anchors; same-segment exact retransmissions remain correctable. Competing weather segments prevent a GPS correction unless their mapping is unique.
 - **Hard ranges:** humidity outside [0,100], negative rain, negative mean wind, or wind direction outside [0,360] are domain failures. Accept 360 as equivalent to 0 for comparisons. Nonfinite/unparseable values are `missing_data`. Temperature/pressure extremes and small negative irradiance are screening evidence, not automatic exclusions based on invented universal limits.
 - **Flatline:** exact repeated reported values for >=12 hours trigger a candidate in temperature, humidity, pressure or wind. Rain=0 and night-time irradiance=0 are normal. To exclude require persistence plus independent evidence of lost response; humidity at 100% remains review unless repeated dry-weather/context evidence rules out a plausible saturation episode. A constant GPS coordinate is not a flatline fault.
 - **Spike:** isolated one/two-record excursions, return within two records, residual >6 robust scales, and adequate nonzero channel-specific noise floor. Initial scale floors: temperature 0.3 C, pressure 0.5 hPa, humidity 2 percentage points. Require two suitable references or an independent channel/domain contradiction before exclusion. Record final development-calibrated floors in configuration; zero MAD must never make every change a fault.
@@ -100,7 +102,7 @@ Report availability counts use disjoint observation/channel states. Metadata dis
 
 The exact benchmark rules, denominators and pass gates are in `docs/EVALUATION.md`. The implementation sequence is in `docs/superpowers/plans/2026-10-24-weather-checker.md`.
 
-All targets are unmeasured until implemented. Original-pack labels will be evidence-reviewed, not created by copying checker output. Unknown cases stay unknown. Synthetic held-out results establish performance only inside the specified test envelope; they do not prove universal meteorological accuracy.
+Original-pack labels were evidence-reviewed independently of relational detector output. Unknown cases stay unknown. Synthetic held-out results establish performance on the sampled cases; they do not prove the entire target envelope or universal meteorological accuracy. See the precise benchmark footprint and measured results.
 
 Scope deliberately omits learned anomaly models, automatic sensor recalibration, a hosted dashboard and generalized understanding of maintenance prose. The main expected effort is investigation and evaluation, not frontend engineering. If gates fail, fix the detector or explicitly renegotiate scope; never claim passage or silently weaken the benchmark.
 

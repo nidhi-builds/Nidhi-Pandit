@@ -1,0 +1,3 @@
+station_id,channel,start_utc,end_utc,candidate_issue,reason,needed_evidence
+S06,all,2025-03-24 10:10,2025-03-24 10:50,clock_error,Clock-affected segment extends beyond GPS support; edge rows not corrected or used for timed comparisons; data/S06.csv rows 3411-3415; data/S06.csv rows 3411-3415,Additional valid GPS anchors
+S06,all,2025-04-11 17:10,2025-04-11 17:50,clock_error,Clock-affected segment extends beyond GPS support; edge rows not corrected or used for timed comparisons; data/S06.csv rows 6045-6049; data/S06.csv rows 6045-6049,Additional valid GPS anchors

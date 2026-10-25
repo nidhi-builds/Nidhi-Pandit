@@ -1,6 +1,6 @@
 # Checker evaluation contract
 
-Status: proposed release gates; no measured scores yet. Do not report target values as results.
+Status: frozen engineering gates, evaluated on 2026-10-25. Actual results and remaining applicant-owned submission items are in [validation-results.md](validation-results.md). Targets below remain acceptance criteria, not universal accuracy guarantees.
 
 ## Five release gates
 
@@ -34,7 +34,7 @@ Provide separate development and locked final-test seed manifests. Freeze detect
 
 For each sensor/relational subtype, use at least 20 positive events spread across >=3 independent base scenarios, plus controls of equal total duration. Include overlapping faults in a separate stress suite; do not quietly count every correlated sample as an independent event. Structural exact cases use exhaustive small fixtures rather than arbitrary accuracy percentages.
 
-### Minimum claimed detection envelope
+### Target detection envelope
 
 | Family/subtype | Known positive benchmark cases |
 |---|---|
@@ -52,6 +52,8 @@ For each sensor/relational subtype, use at least 20 positive events spread acros
 | rainfall_underresponse | >=3 supported nonfreezing regional episodes; total loss or >=90% reduction, with independently established prior/recovered response; no invented exact onset between events |
 
 Record exact injected intervals and correction truth before running the checker. Events outside this envelope are exploratory results, not promised recall. If inputs satisfy the predeclared envelope but the implementation refuses their references, that remains a miss. Eligibility must come from generator truth or independent labels, not post-hoc detector selection.
+
+The locked benchmark samples this envelope; it does not exhaustively validate every boundary or combination. Its actual footprint is: 72-hour temperature/pressure/humidity flatlines; one/two-record temperature/pressure/humidity spikes; additive changes of 4 C/6 hPa/18 humidity points; wind gains of 0.5 or 1.8; temperature/pressure ramps of 5 units over roughly 14-16 days; 4 C conditional temperature excess; and four complete rain-response losses per parent episode. It varies calendar years/months, station IDs/counts, cadence and base weather. There are 20 independent parent cases per family, not 20 per channel or every parameter value. No numeric accuracy claim is made for untested wind flatlines, smaller amplitudes, short baselines, arbitrary compound failures or the entire target envelope.
 
 Truth intervals represent affected observations, not the duration of the underlying hardware condition. A sunlight-dependent injected bias has separate affected daytime intervals and healthy nights. Rain underresponse truth covers supported wet-episode intervals, not all dry days during a week-long simulated blockage. Store the hardware-condition interval separately for explanation; apply IoU and boundary scoring to observation intervals. Generate at least 20 independent fault episodes per subtype; day/episode fragments from one hardware condition do not satisfy the 20-independent-event requirement by themselves. Show both parent-episode counts and interval counts.
 

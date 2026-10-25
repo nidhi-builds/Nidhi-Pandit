@@ -1,0 +1,2 @@
+# Keep source fingerprints stable across checkouts.
+* text=auto eol=lf

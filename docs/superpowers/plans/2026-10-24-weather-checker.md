@@ -10,7 +10,7 @@
 
 **Spec:** [Design](../specs/2026-10-24-weather-checker-design.md). **Gates:** [Evaluation contract](../../EVALUATION.md).
 
-**Status:** Planning complete; execution, investigation labels and all performance results pending. Approximate implementation/investigation budget: 10-14 focused hours plus the applicant's writing/recording; failing gates can require more time. The assignment expects 10-12 hours, so prioritize correctness and avoid expanding the UI.
+**Status:** Engineering execution completed and evaluated on 2026-10-25; applicant-owned submission tasks remain pending. Exact per-stage evidence and refinements are in docs/execution-ledger.md, and actual scores are in docs/validation-results.md. The original estimate was 10-14 focused hours plus applicant writing/recording; do not treat it as measured elapsed effort.
 
 ## Global constraints
 
@@ -42,6 +42,7 @@ ridgeline/config.py            Versioned thresholds and fixed seed settings
 ridgeline/gps.py               NMEA validation; time/position evidence
 ridgeline/checks.py            Missing/duplicate/domain/flatline/spike candidates
 ridgeline/relationships.py     Reference selection; residuals; bias/rain/solar evidence
+ridgeline/reference.py         Shared clean hourly data and basic-reference eligibility
 ridgeline/decisions.py         Actions, consolidation and evidence templates
 ridgeline/report.py            Summary counts, embedded plots and HTML renderer
 tests/test_io.py               Input contract and provenance

@@ -9,5 +9,8 @@
   ],
   "runner_up": "S07",
   "reason": "S02 has a measured persistent pressure discontinuity and stronger independent comparison evidence. S07 wind scaling is a serious alternative, but station-to-station wind differences make that diagnosis less certain. Bring a calibrated pressure reference; if unavailable, arrange it before visiting.",
-  "review_status": "proposed; applicant to review"
+  "review_status": "proposed; applicant to review",
+  "cautions": [
+    "S04 temperature/rain and S07 wind remain investigation priorities; a screened cell is not proof that those instruments are calibrated."
+  ]
 }
