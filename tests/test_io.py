@@ -64,3 +64,13 @@ def test_cli_output_location_preservation_and_failure(tmp_path):
     assert result.returncode != 0
     assert 'error' in result.stderr.lower()
     assert (output / 'flags.csv').read_bytes() == previous
+
+
+def test_ambiguous_headers_and_unrepresentable_fractional_cadence_rejected(tmp_path):
+    make_pack(tmp_path,ids=('A',))
+    path=tmp_path/'data/A.csv';original=path.read_text()
+    path.write_text(original.replace('temp_c,','temp_c,temp_c,',1))
+    with pytest.raises(ValueError,match='duplicate'):load_pack(tmp_path)
+    path.write_text(original)
+    meta=pd.read_csv(tmp_path/'stations.csv');meta['logger_interval_min']=2.5;meta.to_csv(tmp_path/'stations.csv',index=False)
+    with pytest.raises(ValueError,match='whole'):load_pack(tmp_path)

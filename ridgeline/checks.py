@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 from .config import CHANNELS, FLOORS
 from .types import Candidate
+from .gps import parse_nmea
+from .reference import hourly_data,qualified_basic_peers
 
 
 def row_refs(frame):
@@ -24,10 +26,33 @@ def intervals(pack, station, channel, issue, subtype, mask, evidence):
     return result
 
 
+def verified_replay_segments(pack,station,frame):
+    """Varied full-block identity plus independent valid GPS dates, not equality alone."""
+    anchors=[]
+    for line in pack.gps_lines.get(station,[]):
+        try:
+            logger,sentence=line.split(',',1);record=parse_nmea(sentence)
+            if record and record['utc'] is not None and abs((pd.Timestamp(logger)-record['utc']).total_seconds())<=60:
+                anchors.append(record['utc'])
+        except (ValueError,TypeError):continue
+    if len(anchors)<6:return set()
+    anchors=pd.DatetimeIndex(anchors);verified=set()
+    for segment,part in frame.groupby('_segment'):
+        if segment==0 or len(part)<6 or not part[list(CHANNELS)].notna().all().all():continue
+        if part[list(CHANNELS)].nunique().gt(1).sum()<2:continue
+        earlier=frame.loc[frame._row<part._row.min()]
+        matches=part.merge(earlier,on=['_logger_time',*CHANNELS],suffixes=('_new','_old'))
+        matched=set(matches['_row_new'])
+        gps_count=int(((anchors>=part._logger_time.min()) & (anchors<=part._logger_time.max())).sum())
+        if len(matched)==len(part) and gps_count>=6:verified.add(segment)
+    return verified
+
+
 def check_basic(pack):
     result = []
     for station, frame in pack.weather.items():
         cadence = pd.Timedelta(minutes=pack.stations.loc[station, 'logger_interval_min'])
+        replay_segments=verified_replay_segments(pack,station,frame)
         invalid_time = frame._logger_time.isna()
         result += intervals(pack, station, 'all', 'missing_data', 'timestamp', invalid_time,
                             {'supported': False, 'reason': 'Unparseable timestamp cannot be placed on a UTC interval'})
@@ -50,13 +75,16 @@ def check_basic(pack):
                 continue
             if part._time.nunique() == len(part) and part._time.ne(part._logger_time).any():
                 continue  # GPS mapping established these as distinct observations, not duplicates.
-            identical = part[list(CHANNELS)].nunique(dropna=False).le(1).all()
+            identical = part[list(CHANNELS)].nunique(dropna=False).le(1).all() and part[list(CHANNELS)].notna().all().all()
             # Distinct source segments with distinct values may be a clock collision, not retransmission.
-            supported = bool(identical or (part._segment.nunique() == 1 and part._time.notna().all()))
+            same_segment=part._segment.nunique()==1 and part._time.notna().all()
+            replay=bool(set(part._segment.iloc[1:]).issubset(replay_segments))
+            supported = bool(same_segment or identical and replay)
             if identical:
                 result.append(Candidate(station, 'all', 'duplicate_data', 'identical', timestamp, timestamp, row_refs(part),
                     {'supported': supported, 'retain_row': int(part._row.iloc[0]), 'remove_rows': part._row.iloc[1:].astype(int).tolist(),
                      'reason': 'Identical observations share a logger timestamp; retain first source row only'}))
+                result[-1].evidence['gps_supported_replay']=bool(replay and not same_segment)
             else:
                 for channel in CHANNELS:
                     if part[channel].nunique(dropna=False) > 1:
@@ -83,9 +111,11 @@ def check_basic(pack):
                 for block in blocks:
                     if len(block)>2:continue
                     first,last=int(block[0]),int(block[-1])
-                    before=values.iloc[max(0,first-2):first].median()
-                    after=values.iloc[last+1:last+3].median()
-                    if not np.isfinite(before) or not np.isfinite(after) or abs(before-after)>3*FLOORS[channel]:
+                    left=values.iloc[max(0,first-2):first];right=values.iloc[last+1:last+3]
+                    if len(left)!=2 or len(right)!=2 or left.isna().any() or right.isna().any():continue
+                    before,after=left.median(),right.median()
+                    trend=((left.iloc[1]-left.iloc[0])+(right.iloc[1]-right.iloc[0]))/2
+                    if abs(after-before-trend*(len(block)+2))>3*FLOORS[channel]:
                         continue  # A regime transition/recovery is not an excursion with return.
                     support = []
                     timestamps = frame.loc[block, '_time']
@@ -124,4 +154,15 @@ def check_basic(pack):
                 result += intervals(pack, station, channel, 'flatline', 'constant', frame.index.isin(part.index),
                     {'supported': bool(supported), 'constant_value': value, 'samples': len(part), 'minimum_hours': 12,
                      'references': reference_ids, 'reason': f'{channel} unchanged for {len(part) * cadence.total_seconds() / 3600:.1f} hours; independent response evidence required'})
+    clean=hourly_data(pack,result)
+    cache={}
+    for c in result:
+        if c.issue not in ('flatline','spike'):continue
+        key=(c.station_id,c.channel)
+        if key not in cache:cache[key]=set(qualified_basic_peers(clean,*key))
+        trustworthy=[p for p in c.evidence.get('references',[]) if p in cache[key]]
+        c.evidence['references']=trustworthy
+        c.evidence['minimum_reference_hours']=168
+        c.evidence['supported']=bool(c.evidence['supported'] and len(trustworthy)>=2)
+        if not c.evidence['supported']:c.evidence['reason']+='; fewer than two clean, baseline-qualified corroborating references'
     return result

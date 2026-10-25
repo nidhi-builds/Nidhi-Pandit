@@ -1,0 +1,13 @@
+{
+  "tp": 16,
+  "fp": 0,
+  "fn": 4,
+  "precision": 1.0,
+  "recall": 0.8,
+  "independent_cases": 20,
+  "control_cases": 20,
+  "good_cells": 2687970,
+  "lost_good_cells": 0,
+  "good_data_loss": 0.0,
+  "status": "failed development run, preserved before trend-aware return fix"
+}

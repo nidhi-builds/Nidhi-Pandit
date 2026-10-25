@@ -14,12 +14,19 @@ from .config import CHANNELS, FIELDS
 from .types import Pack
 
 
+def read_table(path):
+    with path.open(encoding='utf-8-sig',newline='') as stream:
+        header=next(csv.reader(stream),[])
+    if len(header)!=len(set(header)):raise ValueError(f'{path.name}: duplicate column names')
+    return pd.read_csv(path,dtype=str,keep_default_na=False)
+
+
 def load_pack(folder: Path) -> Pack:
     folder = Path(folder).resolve()
     metadata = folder / 'stations.csv'
     if not metadata.is_file():
         raise ValueError('stations.csv is required')
-    stations = pd.read_csv(metadata, dtype=str, keep_default_na=False)
+    stations = read_table(metadata)
     required = {'station_id', 'name', 'lat', 'lon', 'elevation_m', 'installed', 'logger_interval_min'}
     if not required.issubset(stations.columns) or stations.empty:
         raise ValueError('stations.csv has missing required columns or no stations')
@@ -33,6 +40,8 @@ def load_pack(folder: Path) -> Pack:
         raise ValueError('invalid latitude or longitude')
     if not (stations.logger_interval_min > 0).all():
         raise ValueError('logger interval must be positive')
+    if not stations.logger_interval_min.mod(1).eq(0).all():
+        raise ValueError('logger interval must be whole minutes for this timestamp format')
     stations = stations.set_index('station_id').sort_index()
     files = [metadata]
     weather, gps, diagnostics = {}, {}, []
@@ -40,7 +49,7 @@ def load_pack(folder: Path) -> Pack:
         path = folder / 'data' / f'{station}.csv'
         if not path.is_file():
             raise ValueError(f'missing data/{station}.csv')
-        frame = pd.read_csv(path, dtype=str, keep_default_na=False)
+        frame = read_table(path)
         if not {'timestamp_utc', *CHANNELS}.issubset(frame.columns):
             raise ValueError(f'data/{station}.csv has missing required columns')
         frame['_raw_time'] = frame.timestamp_utc

@@ -48,7 +48,7 @@ def test_wind_scale_and_gradual_drift(tmp_path):
 def test_conditional_bias_only_flags_affected_daylight(tmp_path):
     frames = make_pack(tmp_path, days=25)
     f = frames['A']
-    f['wind_kmh'] = 3
+    f['wind_kmh'] = 3 + .1*np.sin(np.arange(len(f))/20)
     affected = (f.index >= 10 * 144) & f.ghi_wm2.ge(400)
     f.loc[affected, 'temp_c'] += 4
     save(tmp_path, 'A', f)
@@ -64,7 +64,7 @@ def test_conditional_bias_only_flags_affected_daylight(tmp_path):
 def test_repeated_rain_failure_needs_previous_response_and_no_freezing(tmp_path):
     frames = make_pack(tmp_path, days=25)
     for station, f in frames.items():
-        f['temp_c'] = 12
+        f['temp_c'] = 12 + np.sin(np.arange(len(f))/200)
         for day in (2, 5, 11, 14, 17, 20):
             f.loc[day * 144:day * 144 + 11, 'rain_mm'] = .2 if station != 'A' or day < 10 else 0
         save(tmp_path, station, f)

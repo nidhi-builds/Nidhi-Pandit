@@ -1,0 +1,23 @@
+{
+  "environment": {
+    "matplotlib": "3.9.2",
+    "numpy": "1.26.4",
+    "pandas": "2.2.2",
+    "pytest": "7.4.4",
+    "python": "3.12.7"
+  },
+  "files": {
+    "ridgeline\\checks.py": "3a74fee1f6f7027cbfa13b5c182a5e3c4b0d47f40a83121f0f822e877d4d28c0",
+    "ridgeline\\config.py": "2bf649e637dc9694e26429ebbdadfeea7a0231f1b89e62c34f3cc015111853d5",
+    "ridgeline\\decisions.py": "0c6c8f078bd07a9a520ceb08ccd4265fbb5f51b923b6ddfc60358a1fc322b1f3",
+    "ridgeline\\gps.py": "bca026907b78d563b7b91e558d5eb2652563d91d83d5f2cb5fac0699c64865b7",
+    "ridgeline\\io.py": "31c134dea106796329d2f2b725d03ab9ff5b2233bff12e805103a4e2e3a236fb",
+    "ridgeline\\reference.py": "af32cf7a5c5122dee8c9a94ed8cf907bd32bb9bbcff63f9f510e10c2b46ae034",
+    "ridgeline\\relationships.py": "641189282da573a356a52a9443974e51dcebe5d7616fe291d59ac019d092e40e",
+    "tests\\benchmark_cases.py": "80a697e51d9e24f0d2729b71d1efc36a4c97b7d95944434ad6499e4d6570ecdb",
+    "tests\\manifests.json": "7deb17a46fd35822a250bc5d3b7297c3563293bb759190668c615866cc15139d",
+    "tests\\metrics.py": "8858f6e51e973c8df77f34daf5722394685e520e891d766b14e790abf3ad146e"
+  },
+  "rule_fingerprint": "6da6adce90b0f80284ef54be1a6cbd109f30c0906557e68580f3c97ef85bd0bb",
+  "status": "detector and tests frozen before first locked benchmark execution"
+}

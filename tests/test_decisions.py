@@ -10,7 +10,8 @@ from ridgeline.decisions import decide
 
 def test_duplicate_merge_and_metadata_never_excludes_weather(tmp_path):
     frames=make_pack(tmp_path,ids=('A',))
-    save(tmp_path,'A',pd.concat([frames['A'],frames['A'].iloc[10:12]],ignore_index=True))
+    f=frames['A']
+    save(tmp_path,'A',pd.concat([f.iloc[:11],f.iloc[[10]],f.iloc[11:12],f.iloc[[11]],f.iloc[12:]],ignore_index=True))
     pack=load_pack(tmp_path);basic=check_basic(pack)
     metadata=Candidate('A','metadata','location_mismatch','coordinates',pd.Timestamp('2024-05-01'),pd.Timestamp('2024-05-02'),(),{'supported':True,'distance_m':2000,'reason':'Stable GPS mismatch'})
     result=decide(pack,basic+[metadata])

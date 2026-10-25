@@ -13,18 +13,21 @@ def scenario(root: Path, seed: int, family: str, control=False):
     rng = np.random.default_rng(seed)
     cadence = (10, 20, 30)[seed % 3]
     days = 25
-    time = pd.date_range('2023-08-01', periods=days * 1440 // cadence, freq=f'{cadence}min')
+    base=pd.Timestamp(year=2022+seed%3,month=(2,6,10)[seed%3],day=1)
+    time = pd.date_range(base, periods=days * 1440 // cadence, freq=f'{cadence}min')
     hour = np.arange(len(time)) * cadence / 60
     phase = (seed % 7) / 10
-    sun = np.maximum(0, np.sin(2 * np.pi * (hour % 24 - 12) / 24))
+    daylight=12+3*np.sin(2*np.pi*(time.dayofyear.to_numpy()-80)/365)
+    solar_hour=(hour%24-19+12)%24-12
+    sun=np.where(np.abs(solar_hour)<daylight/2,np.maximum(0,np.cos(np.pi*solar_hour/daylight)),0)
     regional = 2 * np.sin(hour / (19 + seed % 3) + phase) + np.cos(hour / 8 + phase)
     wind = 6 + np.sin(hour / 5 + phase) + .5 * np.sin(hour / 17)
     ids = [f'N{seed % 997}_{i}' for i in range(3 + seed % 2)]
     target = ids[seed % len(ids)]
-    onset = pd.Timestamp('2023-08-01') + pd.Timedelta(days=9 + seed % 3)
+    onset = base + pd.Timedelta(days=9 + seed % 3)
     affected = np.zeros(len(time), dtype=bool)
-    channel = {'flatline':'temp_c','spike':'temp_c','additive':('pressure_hpa','temp_c','rh_pct')[seed % 3],
-               'multiplicative':'wind_kmh','gradual':'temp_c','conditional':'temp_c','rain':'rain_mm'}[family]
+    channel = {'flatline':('temp_c','pressure_hpa','rh_pct')[seed%3],'spike':('temp_c','pressure_hpa','rh_pct')[seed%3],'additive':('pressure_hpa','temp_c','rh_pct')[seed % 3],
+               'multiplicative':'wind_kmh','gradual':'temp_c' if seed%2 else 'pressure_hpa','conditional':'temp_c','rain':'rain_mm'}[family]
     issue = {'additive':'sensor_bias','multiplicative':'sensor_bias','gradual':'sensor_bias','conditional':'sensor_bias','rain':'rainfall_underresponse'}.get(family, family)
     frames, stations = {}, []
     for i, station in enumerate(ids):
@@ -38,19 +41,20 @@ def scenario(root: Path, seed: int, family: str, control=False):
             'wind_dir_deg': (hour * 5 + 350) % 360,
             'rain_mm': np.zeros(len(time)), 'ghi_wm2': sun * (680 + i * 3)})
         if family == 'conditional' and station == target:
-            f['wind_kmh'] = 3
+            f['wind_kmh'] = 3+.1*np.sin(hour/4)
         if family == 'rain':
-            f['temp_c'] = 12
+            f['temp_c'] = 12+np.sin(hour/8)
             for day in (2,5,12,15,18,21):
                 mask = (time >= time[0] + pd.Timedelta(days=day)) & (time < time[0] + pd.Timedelta(days=day,hours=2))
                 f.loc[mask, 'rain_mm'] = 2.4 / mask.sum()
         if station == target:
             if family == 'flatline':
-                affected = (time >= onset) & (time < onset + pd.Timedelta(hours=36))
-                if not control: f.loc[affected, channel] = 12.345
+                affected = (time >= onset) & (time < onset + pd.Timedelta(hours=72))
+                if not control: f.loc[affected, channel] = {'temp_c':12.345,'pressure_hpa':845.123,'rh_pct':55.123}[channel]
             elif family == 'spike':
-                affected[len(time)//2 + seed % 17] = True
-                if not control: f.loc[affected, channel] += 12 * (-1 if seed % 2 else 1)
+                index=len(time)//2+seed%17
+                affected[index:index+1+seed%2] = True
+                if not control: f.loc[affected, channel] += {'temp_c':12,'pressure_hpa':12,'rh_pct':30}[channel] * (-1 if seed % 2 else 1)
             elif family in ('additive','multiplicative','gradual'):
                 affected = time >= onset
                 if not control:

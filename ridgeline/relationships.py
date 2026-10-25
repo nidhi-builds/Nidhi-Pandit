@@ -4,6 +4,7 @@ import pandas as pd
 from .checks import intervals
 from .config import CHANNELS, BIAS_FLOORS
 from .gps import distance_m
+from .reference import hourly_data
 
 
 def solar_elevation(times, lat, lon):
@@ -19,24 +20,6 @@ def solar_elevation(times, lat, lon):
     angle = np.radians((hour * 60 + equation + 4 * lon) / 4 - 180)
     sine = np.sin(np.radians(lat)) * np.sin(declination) + np.cos(np.radians(lat)) * np.cos(declination) * np.cos(angle)
     return np.degrees(np.arcsin(np.clip(sine, -1, 1)))
-
-
-def hourly_data(pack, basic):
-    hourly = {}
-    for station, original in pack.weather.items():
-        frame = original.copy()
-        for candidate in basic:
-            if candidate.station_id != station or not candidate.evidence.get('supported'):
-                continue
-            if candidate.issue in ('missing_data', 'out_of_range', 'flatline', 'spike'):
-                columns = list(CHANNELS) if candidate.channel == 'all' else [candidate.channel]
-                mask = frame._source.str.cat(frame._row.astype(str), sep=':').isin(candidate.row_refs)
-                frame.loc[mask, columns] = np.nan
-        frame = frame.loc[frame._time.notna()].drop_duplicates('_time', keep='first').set_index('_time')
-        values = frame[list(CHANNELS)].resample('h').median()
-        values['rain_mm'] = frame.rain_mm.resample('h').sum(min_count=1)
-        hourly[station] = values
-    return hourly
 
 
 def references(pack, hourly, station, channel):

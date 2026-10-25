@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 from tests.helpers import make_pack, save
 from ridgeline.io import load_pack
 from ridgeline.checks import check_basic
@@ -35,7 +36,7 @@ def test_empty_edges_are_not_invented_gaps_and_reset_not_deduplicated(tmp_path):
 
 
 def test_hard_ranges_spike_and_supported_flatline(tmp_path):
-    frames = make_pack(tmp_path, days=4)
+    frames = make_pack(tmp_path, days=12)
     frames['A'].loc[10, 'rh_pct'] = 101
     frames['A'].loc[11, 'rain_mm'] = -.2
     frames['A'].loc[12, 'wind_kmh'] = -1
@@ -71,7 +72,7 @@ def test_unverified_clock_collision_is_not_confirmed_conflict(tmp_path):
 
 
 def test_recovery_from_stuck_sensor_is_not_an_isolated_spike(tmp_path):
-    frames=make_pack(tmp_path,days=5);f=frames['A']
+    frames=make_pack(tmp_path,days=12);f=frames['A']
     f.loc[:299,'temp_c']=6.5
     f.loc[300:304,'temp_c']=[.9,1.6,2.3,2.9,3.5]
     save(tmp_path,'A',f)
@@ -81,7 +82,27 @@ def test_recovery_from_stuck_sensor_is_not_an_isolated_spike(tmp_path):
 
 
 def test_two_record_spike_is_one_event_with_return(tmp_path):
-    frames=make_pack(tmp_path,days=4)
+    frames=make_pack(tmp_path,days=12)
     frames['A'].loc[200:201,'temp_c']+=12;save(tmp_path,'A',frames['A'])
     spikes=[c for c in check_basic(load_pack(tmp_path)) if c.station_id=='A' and c.issue=='spike' and c.evidence['supported']]
     assert len(spikes)==1 and len(spikes[0].row_refs)==2
+
+
+def test_large_spike_with_background_trend_still_has_a_return(tmp_path):
+    import numpy as np
+    frames=make_pack(tmp_path,days=12);f=frames['A']
+    f.loc[1197:1204,'temp_c']+=np.linspace(-2,2,8)
+    f.loc[1200,'temp_c']+=70;save(tmp_path,'A',f)
+    event=pd.Timestamp(f.loc[1200,'timestamp_utc'])
+    assert any(c.issue=='spike' and c.start==event and c.evidence['supported'] for c in check_basic(load_pack(tmp_path)))
+
+
+@pytest.mark.parametrize('cadence',[5,10,30])
+@pytest.mark.parametrize('missing',[1,6,144])
+def test_structural_gap_counts_and_boundaries_across_cadences(tmp_path,cadence,missing):
+    frames=make_pack(tmp_path,days=6,cadence=cadence,ids=('A',));f=frames['A']
+    start=pd.Timestamp(f.loc[12,'timestamp_utc']);end=pd.Timestamp(f.loc[12+missing-1,'timestamp_utc'])
+    save(tmp_path,'A',f.drop(index=range(12,12+missing)))
+    gaps=[c for c in check_basic(load_pack(tmp_path)) if c.subtype=='records']
+    assert len(gaps)==1 and gaps[0].start==start and gaps[0].end==end
+    assert gaps[0].evidence['missing_records']==missing

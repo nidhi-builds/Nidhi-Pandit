@@ -98,6 +98,7 @@ def audit_gps(pack):
             scope = f._segment.eq(segment) if weather_segments == gps_segments else mask
             ambiguous = any(other != segment and max(part.logger.min(), otherpart.logger.min()) <= min(part.logger.max(), otherpart.logger.max())
                             for other, otherpart in g.groupby('segment') ) and weather_segments != gps_segments
+            ambiguous |= f.loc[mask,'_segment'].nunique()>1
             correctable = mad <= 5 and not drift and abs(median - round(median / 60) * 60) <= 5
             supported = bool(mask.any() and not ambiguous and (correctable or drift))
             refs = tuple(f'{source}:{row}' for source, row in zip(f.loc[mask, '_source'], f.loc[mask, '_row']))

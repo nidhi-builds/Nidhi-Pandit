@@ -33,9 +33,11 @@ def sources(refs):
 
 
 def review(candidate, reason=None):
+    reason=reason or candidate.evidence.get('reason','Insufficient independent evidence')
+    if candidate.row_refs:reason+='; '+sources(candidate.row_refs)
     return dict(station_id=candidate.station_id,channel=candidate.channel,start_utc=stamp(candidate.start),end_utc=stamp(candidate.end),
-                candidate_issue=candidate.issue,reason=reason or candidate.evidence.get('reason','Insufficient independent evidence'),
-                needed_evidence='Verify source records, time and an independent reference before choosing an action')
+                candidate_issue=candidate.issue,reason=reason,
+                needed_evidence='Verify source records, time and an independent reference before choosing an action',_source_rows=list(candidate.row_refs))
 
 
 def action_for(c):
@@ -124,12 +126,15 @@ def decide(pack,candidates):
             f=pack.weather[d['station_id']]
             for part in intervals(pack,d['station_id'],'all','clock_error','unsupported_edge',f._row.isin(d['rows']),{'supported':False,'reason':d['reason']}):
                 item=review(part,d['reason']+'; '+sources(part.row_refs));item['needed_evidence']='Additional valid GPS anchors';reviews.append(item)
-    rules=hashlib.sha256(b''.join((Path(__file__).parent/name).read_bytes() for name in ('config.py','io.py','gps.py','checks.py','relationships.py','decisions.py'))).hexdigest()
+    rules=hashlib.sha256(b''.join((Path(__file__).parent/name).read_bytes() for name in ('config.py','io.py','gps.py','checks.py','reference.py','relationships.py','decisions.py'))).hexdigest()
     summary=summarize(pack,merged,reviews)
+    reviews.sort(key=lambda r:(r['station_id'],r['start_utc'],r['channel'],r['candidate_issue']))
+    review_evidence=[dict(review_row=i+1,source_rows=r['_source_rows']) for i,r in enumerate(reviews)]
+    reviews=[{k:v for k,v in r.items() if not k.startswith('_')} for r in reviews]
     evidence={'rule_version':VERSION,'rule_fingerprint':rules,'input_fingerprint':fingerprint(pack.input_hashes),
               'input_hashes':pack.input_hashes,'flags':entries,'diagnostics':pack.diagnostics,'summary':summary,
-              'plot_data':plot_data(pack,merged)}
-    return RunResult(flags,sorted(reviews,key=lambda r:(r['station_id'],r['start_utc'],r['channel'],r['candidate_issue'])),evidence,summary)
+              'plot_data':plot_data(pack,merged),'reviews':review_evidence}
+    return RunResult(flags,reviews,evidence,summary)
 
 
 def plot_data(pack,accepted):
@@ -162,10 +167,12 @@ def summarize(pack,accepted,reviews):
             columns=list(CHANNELS) if c.channel=='all' else [c.channel]
             if action=='correct':state.loc[mask,columns]='correct'
         for r in reviews:
-            if r['station_id']!=station or r['channel']=='metadata' or not r['start_utc'] or not r['end_utc']:continue
-            mask=f._logger_time.between(r['start_utc'],r['end_utc'])
+            if r['station_id']!=station or r['channel']=='metadata':continue
+            if r.get('_source_rows'):mask=keys.isin(r['_source_rows'])
+            elif r['start_utc'] and r['end_utc']:mask=f._logger_time.between(r['start_utc'],r['end_utc'])
+            else:continue
             columns=list(CHANNELS) if r['channel']=='all' else [r['channel']]
-            state.loc[mask,columns]=state.loc[mask,columns].where(state.loc[mask,columns]!='screened','review')
+            state.loc[mask,columns]='review'
         for c,action in accepted:
             if c.station_id==station and action=='exclude' and c.channel!='metadata':
                 columns=list(CHANNELS) if c.channel=='all' else [c.channel]
