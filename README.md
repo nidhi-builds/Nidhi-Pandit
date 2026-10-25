@@ -21,7 +21,8 @@ Run from the directory where you want the outputs. The command can also be calle
 - [Design and final fault vocabulary](docs/superpowers/specs/2026-10-24-weather-checker-design.md)
 - [Stage-gated implementation plan](docs/superpowers/plans/2026-10-24-weather-checker.md)
 - [Exact evaluation contract](docs/EVALUATION.md)
-- [AI-log export instructions](ai_logs/README.md)
+- [Investigation decisions](DECISIONS.md)
+- [AI conversation transcript](ai_logs/conversation.md)
 
 ## Outputs and actions
 

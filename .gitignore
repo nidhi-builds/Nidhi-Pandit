@@ -4,7 +4,6 @@
 /private/
 /tmp/
 /original_pack_review.csv
-/DECISIONS.md
 # Python/local tool state
 __pycache__/
 .pytest_cache/
